@@ -1,0 +1,123 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                      Trading Session Time With Alert MT5 |
+//|                                              forexroboteasy.com |
+//|                                            Forex Robot Easy Team |
+//+------------------------------------------------------------------+
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_color1 clrBlue
+
+// Input parameters
+input bool Tokyo_Session = true;
+input bool London_Session = true;
+input bool NewYork_Session = true;
+
+// Time zone offsets for trading sessions
+input int Tokyo_Offset = 9;
+input int London_Offset = 0;
+input int NewYork_Offset = -5;
+
+// Alert settings
+input bool Enable_Alerts = true;
+input bool Sound_Alert = true;
+input bool Popup_Alert = false;
+input bool Email_Alert = false;
+
+// Buffer for drawing indicator
+double sessionsBuffer[];
+
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+void OnInit()
+{
+   // Set indicator buffer
+   SetIndexBuffer(0, sessionsBuffer);
+
+   // Set indicator label
+   IndicatorSetString(INDICATOR_SHORTNAME, 'Trading Session Time');
+
+   // Set timezone
+   int serverTimezone = TimezoneCurrent();
+
+   // Calculate session times
+   datetime tokyoOpen = D'1970.01.01 00:00:00' + Tokyo_Offset * 3600;
+   datetime tokyoClose = D'1970.01.01 00:00:00' + Tokyo_Offset * 3600 + 6 * 3600;
+   datetime londonOpen = D'1970.01.01 00:00:00' + London_Offset * 3600;
+   datetime londonClose = D'1970.01.01 00:00:00' + London_Offset * 3600 + 8 * 3600;
+   datetime newYorkOpen = D'1970.01.01 00:00:00' + NewYork_Offset * 3600;
+   datetime newYorkClose = D'1970.01.01 00:00:00' + NewYork_Offset * 3600 + 8 * 3600;
+
+   // Convert session times to local time
+   datetime localTokyoOpen = TimeLocal(tokyoOpen);
+   datetime localTokyoClose = TimeLocal(tokyoClose);
+   datetime localLondonOpen = TimeLocal(londonOpen);
+   datetime localLondonClose = TimeLocal(londonClose);
+   datetime localNewYorkOpen = TimeLocal(newYorkOpen);
+   datetime localNewYorkClose = TimeLocal(newYorkClose);
+
+   // Draw session lines
+   if (Tokyo_Session)
+   {
+      sessionsBuffer[ArraySize(sessionsBuffer)-1] = localTokyoOpen;
+      sessionsBuffer[ArraySize(sessionsBuffer)-2] = localTokyoClose;
+   }
+   if (London_Session)
+   {
+      sessionsBuffer[ArraySize(sessionsBuffer)-3] = localLondonOpen;
+      sessionsBuffer[ArraySize(sessionsBuffer)-4] = localLondonClose;
+   }
+   if (NewYork_Session)
+   {
+      sessionsBuffer[ArraySize(sessionsBuffer)-5] = localNewYorkOpen;
+      sessionsBuffer[ArraySize(sessionsBuffer)-6] = localNewYorkClose;
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+{
+   // Clear indicator buffer
+   ArrayInitialize(sessionsBuffer, EMPTY_VALUE);
+
+   return(rates_total);
+}
+
+//+------------------------------------------------------------------+
+//| Custom indicator deinitialization function                       |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Remove indicator buffers
+   IndicatorBuffers(0);
+}
+
+//+------------------------------------------------------------------+
+//| Custom alert function                                            |
+//+------------------------------------------------------------------+
+void Alert(const string message)
+{
+   if (Enable_Alerts && message != '')
+   {
+      if (Sound_Alert)
+         PlaySound('alert.wav');
+
+      if (Popup_Alert)
+         Alert(message);
+
+      if (Email_Alert)
+         SendMail('Alert', message, '');
+   }
+}
